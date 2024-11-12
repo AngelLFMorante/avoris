@@ -1,0 +1,43 @@
+# Configuración del servidor
+server:
+  port: 8081
+
+spring:
+# Nombre de la aplicación
+  application:
+      name: HotelSearchApp
+
+# Configuración de Kafka
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    consumer:
+      group-id: hotel-group
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+    producer:
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+# Configuración de PostgreSQL
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hotelsearchdb
+    username: postgres
+    password: sasa
+    driverClassName: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+# Configuración específica de la aplicación
+hotel:
+  kafka:
+    topic: hotel_availability_searches
+
+##Inicializar Zookeeper
+## .\zookeeper-server-start.bat ..\..\config\zookeeper.properties
+##Inicializar kafka
+## .\kafka-server-start.bat ..\..\config\server.properties
