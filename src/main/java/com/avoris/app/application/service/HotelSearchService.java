@@ -5,6 +5,7 @@ import com.avoris.app.domain.model.HotelSearchRequest;
 import com.avoris.app.domain.model.HotelSearchResponse;
 import com.avoris.app.domain.repository.HotelSearchRepository;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.Optional;
@@ -42,14 +43,11 @@ public class HotelSearchService {
      */
     @Transactional
     public String processSearch(HotelSearchRequest request) {
-        // Genera un ID único para la búsqueda
         String searchId = UUID.randomUUID().toString();
 
-        // Convierte las fechas LocalDate a Date
         Date checkInDate = convertToDate(request.checkIn());
         Date checkOutDate = convertToDate(request.checkOut());
 
-        // Crear y guardar el objeto HotelSearch en la base de datos
         HotelSearch hotelSearch = new HotelSearch(
                 searchId,
                 request.hotelId(),
@@ -58,15 +56,12 @@ public class HotelSearchService {
                 request.ages()
         );
 
-        // Guardar la búsqueda en la base de datos
         repository.save(hotelSearch);
 
-        // Enviar el mensaje a Kafka
         String message = String.format("{\"hotelId\":\"%s\", \"checkIn\":\"%s\", \"checkOut\":\"%s\", \"ages\":%s}",
                 request.hotelId(), request.checkIn(), request.checkOut(), request.ages());
         kafkaTemplate.send("hotel_availability_searches", searchId, message);
 
-        // Retornar el ID de la búsqueda
         return searchId;
     }
 
@@ -79,20 +74,17 @@ public class HotelSearchService {
     public Optional<HotelSearchResponse> getCount(String searchId) {
         return repository.findBySearchId(searchId)
                 .map(search -> {
-                    // Definir el rango de fechas para las búsquedas similares
-                    LocalDate checkInStart = search.getCheckIn().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().minusDays(1);
-                    LocalDate checkInEnd = search.getCheckIn().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1);
-                    LocalDate checkOutStart = search.getCheckOut().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().minusDays(1);
-                    LocalDate checkOutEnd = search.getCheckOut().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1);
+                    LocalDateTime checkInStart = search.getCheckIn().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay();
+                    LocalDateTime checkInEnd = checkInStart.plusDays(1).minusSeconds(1); // hasta el final del día
+                    LocalDateTime checkOutStart = search.getCheckOut().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay().minusDays(1);
+                    LocalDateTime checkOutEnd = search.getCheckOut().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay().plusDays(1).minusSeconds(1);
 
-                    // Contar las búsquedas similares
                     long count = repository.countSimilarSearches(
                             search.getHotelId(),
                             checkInStart, checkInEnd,
                             checkOutStart, checkOutEnd
                     );
 
-                    // Crear la respuesta con el conteo
                     return Optional.of(new HotelSearchResponse(searchId, search, count));
                 }).orElse(Optional.empty());
     }
@@ -113,6 +105,6 @@ public class HotelSearchService {
      * @param request the hotel search request to process
      */
     public void handleSearch(HotelSearchRequest request) {
-        processSearch(request); // Reuses the logic to save the search
+        processSearch(request);
     }
 }

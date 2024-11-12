@@ -21,7 +21,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public String handleRuntimeException(RuntimeException ex) {
-        // Log the error and return a custom error message
         return "An error occurred: " + ex.getMessage();
     }
 }

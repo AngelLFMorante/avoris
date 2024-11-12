@@ -1,11 +1,10 @@
 package com.avoris.app.domain.repository;
 
 import com.avoris.app.domain.model.HotelSearch;
+import java.time.LocalDateTime;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-
-import java.time.LocalDate;
-import java.util.Optional;
 
 /**
  * Repository interface to perform hotel search operations.
@@ -28,10 +27,10 @@ public interface HotelSearchRepository extends JpaRepository<HotelSearch, Long> 
     @Query("SELECT COUNT(h) FROM HotelSearch h WHERE h.hotelId = ?1 AND h.checkIn BETWEEN ?2 AND ?3 AND h.checkOut BETWEEN ?4 AND ?5")
     Long countSimilarSearches(
             String hotelId,
-            LocalDate checkInStart,
-            LocalDate checkInEnd,
-            LocalDate checkOutStart,
-            LocalDate checkOutEnd);
+            LocalDateTime checkInStart,
+            LocalDateTime checkInEnd,
+            LocalDateTime checkOutStart,
+            LocalDateTime checkOutEnd);
 }
 
 
