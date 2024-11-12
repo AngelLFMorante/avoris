@@ -1,18 +1,24 @@
 package com.avoris.app.web;
 
+import com.avoris.app.application.service.HotelSearchService;
 import com.avoris.app.domain.model.HotelSearch;
 import com.avoris.app.domain.model.HotelSearchRequest;
-import com.avoris.app.application.service.HotelSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST Controller to handle hotel search operations.
@@ -65,20 +71,26 @@ public class HotelSearchController {
     public Map<String, Object> countSimilarSearches(
             @Parameter(description = "The search ID", required = true)
             @RequestParam String searchId) {
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
         return hotelSearchService.getCount(searchId)
                 .map(result -> {
-                    Map<String, Object> response = new HashMap<>();
-                    // Buscar la búsqueda asociada al searchId
+                    Map<String, Object> response = new LinkedHashMap<>();
                     HotelSearch search = result.search();
-                    // Colocar el searchId y los detalles de la búsqueda
+
+                    String formattedCheckIn = search.getCheckIn().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(dateFormatter);
+                    String formattedCheckOut = search.getCheckOut().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(dateFormatter);
+
+                    Map<String, Object> searchDetails = new LinkedHashMap<>();
+                    searchDetails.put("hotelId", search.getHotelId());
+                    searchDetails.put("checkIn", formattedCheckIn);
+                    searchDetails.put("checkOut", formattedCheckOut);
+                    searchDetails.put("ages", search.getAges());
+
                     response.put("searchId", searchId);
-                    response.put("search", Map.of(
-                            "hotelId", search.getHotelId(),
-                            "checkIn", search.getCheckIn(),
-                            "checkOut", search.getCheckOut(),
-                            "ages", search.getAges()
-                    ));
+                    response.put("search", searchDetails);
                     response.put("count", result.count());
+
                     return response;
                 })
                 .orElseThrow(() -> new RuntimeException("Search ID not found"));
